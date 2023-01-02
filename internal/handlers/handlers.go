@@ -27,10 +27,20 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type WebsocketConnection struct {
+	*websocket.Conn
+}
 type WsJsonResponse struct {
-	Action      string `json:"action`
+	Action      string `json:"action"`
 	Message     string `json:"message"`
 	MessageType string `json:"message_type"`
+}
+
+type WsPaload struct {
+	Action   string              `json:"action"`
+	Username string              `json:"username"`
+	Message  string              `json:"message"`
+	Conn     WebsocketConnection `json:"-"`
 }
 
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
