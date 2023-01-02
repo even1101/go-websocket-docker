@@ -41,6 +41,7 @@
                 </div>
                 <hr />
                 <a id="sendBtn" href="javascript:void(0)" class="btn btn-primary">Send message</a>
+                <div id="status" class="mt-2 float-end"></div>
                 <input type="hidden" id="action" name="action" />
 
                 <hr />
@@ -56,9 +57,13 @@
             </div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
         crossorigin="anonymous"></script>
+
+    <script src="/static/reconnecting-websocket.min.js"></script>
+
     <script>
         function getEl(elName) {
             return document.querySelector(elName);
@@ -72,17 +77,28 @@
         }
 
         document.addEventListener("DOMContentLoaded", function() {
-            socket = new WebSocket("ws://127.0.0.1:8000/ws");
+            socket = new ReconnectingWebSocket("ws://127.0.0.1:8000/ws", null, {
+                debug: true,
+                reconnectInterval: 5000
+            });
+
+            const offline = `<span class="badge bg-danger">Not connected</span>`;
+            const online = `<span class="badge bg-success">connected</span>`;
+            let statusDiv = getEl('#status');
 
             socket.onopen = () => {
                 console.log('success');
+                statusDiv.innerHTML = online;
             }
             socket.onclose = () => {
                 console.log('close');
+                statusDiv.innerHTML = offline;
             }
             socket.onerror = (error) => {
                 console.log('error');
+                statusDiv.innerHTML = offline;
             }
+        
             socket.onmessage = (message) => {
                 let data = JSON.parse(message.data);
                 console.log(data.action);
@@ -107,31 +123,31 @@
             }
 
             let userInput = getEl('#username');
-            userInput.addEventListener('change', function() {
-                let jsonData = {};
-                jsonData["action"] = "username";
-                jsonData["username"] = this.value;
-                socket.send(JSON.stringify(jsonData));
-            });
-            getEl('#message').addEventListener('keydown', function(event) {
-                if (event.code === "Enter") {
-                    if (!socket) {
-                        cosnole.log('no connection');
-                        return false;
-                    }
-                    event.preventDefault();
-                    event.stopPropagation();
-                    sendMessage();
-                }
-            });
-            getEl('#sendBtn').addEventListener('click', function() {
-                if (getEl('#username').value === "" || getEl('#message').value === "") {
-                    alert('data has empty');
+        userInput.addEventListener('change', function() {
+            let jsonData = {};
+            jsonData["action"] = "username";
+            jsonData["username"] = this.value;
+            socket.send(JSON.stringify(jsonData));
+        });
+        getEl('#message').addEventListener('keydown', function(event) {
+            if (event.code === "Enter") {
+                if (!socket) {
+                    cosnole.log('no connection');
                     return false;
-                } else {
-                    sendMessage();
                 }
-            })
+                event.preventDefault();
+                event.stopPropagation();
+                sendMessage();
+            }
+        });
+        getEl('#sendBtn').addEventListener('click', function() {
+            if (getEl('#username').value === "" || getEl('#message').value === "") {
+                alert('data has empty');
+                return false;
+            } else {
+                sendMessage();
+            }
+        })
         });
 
         function sendMessage() {
