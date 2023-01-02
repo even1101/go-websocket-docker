@@ -49,6 +49,9 @@
             </div>
             <div class="col-md-4">
                 <h3>Who's Onlie</h3>
+                <ul id="onlineUsers">
+
+                </ul>
             </div>
         </div>
     </div>
@@ -57,6 +60,13 @@
         crossorigin="anonymous"></script>
     <script>
         let socket = null;
+
+        window.beforeunload = function() {
+            let jsonData = {};
+            jsonData['action'] = 'left';
+            socket.send(JSON.stringify(jsonData));
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
             socket = new WebSocket("ws://127.0.0.1:8000/ws");
 
@@ -70,8 +80,31 @@
                 console.log('error');
             }
             socket.onmessage = (message) => {
-                console.log(message);
+                let data = JSON.parse(message.data);
+                console.log(data.action);
+                switch (data.action) {
+                    case "list_users":
+                        let ul = document.querySelector('#onlineUsers');
+                        while (ul.firstChild) ul.removeChild(ul.firstChild);
+
+                        if (data.connected_users?.length > 0) {
+                            data.connected_users.forEach(element => {
+                                let li = document.createElement("li");
+                                li.appendChild(document.createTextNode(element));
+                                ul.appendChild(li);
+                            });
+                        }
+                }
+
             }
+
+            let userInput = document.querySelector('#username');
+            userInput.addEventListener('change', function() {
+                let jsonData = {};
+                jsonData["action"] = "username";
+                jsonData["username"] = this.value;
+                socket.send(JSON.stringify(jsonData));
+            });
         });
     </script>
 </body>
