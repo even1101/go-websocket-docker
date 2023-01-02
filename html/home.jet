@@ -39,7 +39,8 @@
                     <input type="text" id="message" class="from-control" name="message" placeholder="Message"
                         autocomplete="off" />
                 </div>
-
+                <hr />
+                <a id="sendBtn" href="javascript:void(0)" class="btn btn-primary">Send message</a>
                 <input type="hidden" id="action" name="action" />
 
                 <hr />
@@ -59,8 +60,11 @@
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
         crossorigin="anonymous"></script>
     <script>
+        function getEl(elName) {
+            return document.querySelector(elName);
+        }
         let socket = null;
-
+        let o = getEl('#output');
         window.beforeunload = function() {
             let jsonData = {};
             jsonData['action'] = 'left';
@@ -84,7 +88,7 @@
                 console.log(data.action);
                 switch (data.action) {
                     case "list_users":
-                        let ul = document.querySelector('#onlineUsers');
+                        let ul = getEl('#onlineUsers');
                         while (ul.firstChild) ul.removeChild(ul.firstChild);
 
                         if (data.connected_users?.length > 0) {
@@ -94,18 +98,50 @@
                                 ul.appendChild(li);
                             });
                         }
+                        break;
+                    case "broadcast":
+                        o.innerHTML = o.innerHTML + data.message + "<br/>";
+                        break;
                 }
 
             }
 
-            let userInput = document.querySelector('#username');
+            let userInput = getEl('#username');
             userInput.addEventListener('change', function() {
                 let jsonData = {};
                 jsonData["action"] = "username";
                 jsonData["username"] = this.value;
                 socket.send(JSON.stringify(jsonData));
             });
+            getEl('#message').addEventListener('keydown', function(event) {
+                if (event.code === "Enter") {
+                    if (!socket) {
+                        cosnole.log('no connection');
+                        return false;
+                    }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    sendMessage();
+                }
+            });
+            getEl('#sendBtn').addEventListener('click', function() {
+                if (getEl('#username').value === "" || getEl('#message').value === "") {
+                    alert('data has empty');
+                    return false;
+                } else {
+                    sendMessage();
+                }
+            })
         });
+
+        function sendMessage() {
+            let jsonData = {};
+            jsonData["action"] = "broadcast";
+            jsonData["username"] = getEl('#username').value;
+            jsonData["message"] = getEl('#message').value;
+            socket.send(JSON.stringify(jsonData));
+            getEl('#message').value = "";
+        }
     </script>
 </body>
 
